@@ -53,6 +53,10 @@ class RectTextViewer:
     def w_units(self) -> int:
         return self.rects[:, 3].max() - self.rects[:, 1].min() + 1
 
+    @property
+    def units(self):
+        return max(self.h_units, self.w_units)
+
     def to_array(self, show_order: bool = False) -> array2D:
         """
         >>> vr = RectTextViewer(np.array([(1, 1, 2, 3), (3, 4, 6, 7), (4, 1, 6, 2)]))
@@ -335,7 +339,22 @@ class OrderedRectangles:
         arr[:, 2:] = np.ceil(arr[:, 2:])
         return arr.astype(int) + 1
 
-
+    def show(self, units: int = 10, show_order: bool = True):
+        """
+        >>> r = OrderedRectangles([(0.1, 0.2, 0.23, 1), (0.35, 0.45, 0.74, 0.8)])
+        >>> r.show(units=12)  # doctest: +NORMALIZE_WHITESPACE
+         1##########
+         #         #
+         ###########
+            2#####
+            #    #
+            #    #
+            #    #
+            #    #
+            ######
+        """
+        arr = self.get_discretized_array(units=units)
+        RectTextViewer(arr).show(show_order=show_order)
 
 
 def main():
