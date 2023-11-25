@@ -1,8 +1,11 @@
 
+from typing import Union, Iterable, Tuple
 from typing_extensions import TypeAlias
 
 import numpy as np
 
+BoxFloat: TypeAlias = Tuple[float, float, float, float]
+BoxInt: TypeAlias = Tuple[int, int, int, int]
 
 array2D: TypeAlias = np.ndarray
 arrayRects: TypeAlias = array2D
@@ -41,6 +44,14 @@ class RectTextViewer:
 
     def __eq__(self, other):
         return self.rects.shape == other.rects.shape and (self.rects == other.rects).all()
+
+    @property
+    def h_units(self) -> int:
+        return self.rects[:, 2].max() - self.rects[:, 0].min() + 1
+
+    @property
+    def w_units(self) -> int:
+        return self.rects[:, 3].max() - self.rects[:, 1].min() + 1
 
     def to_array(self, show_order: bool = False) -> array2D:
         """
@@ -273,6 +284,58 @@ class RectTextViewer:
 
     def show(self, show_order: bool = True):
         print(self.to_string(show_order=show_order))
+
+
+class OrderedRectangles:
+    def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
+        self.rects = rectangles if isinstance(rectangles, np.ndarray) else np.array([v for v in rectangles])
+
+    def get_discretized_array(self, units: int = 10) -> arrayRectsInt:
+        """
+        >>> r = OrderedRectangles([(1, 2, 3, 4), (5, 6, 7, 8)])
+        >>> r.get_discretized_array(8)
+        array([[1, 2, 3, 4],
+               [5, 6, 7, 8]])
+        >>> r.get_discretized_array(4)
+        array([[1, 1, 2, 3],
+               [2, 3, 4, 4]])
+
+        >>> r = OrderedRectangles([(0.1, 0.04, 0.3, 0.22), (0.87, 0.6, 1.5, 0.9)])
+        >>> r.get_discretized_array(12)
+        array([[ 1,  1,  3,  3],
+               [ 7,  5, 12,  8]])
+        >>> r.get_discretized_array(25)
+        array([[ 1,  1,  6,  4],
+               [14, 10, 26, 16]])
+        """
+        # x1, y1, x2, y2 = self.rects.T.copy()
+
+        # xmin = x1.min()
+        # xmax = x2.max()
+        # xcoef = h_units / (xmax - xmin)
+        # """coef to convert initial range to [1; h_units] range"""
+        #
+        # x1 = np.floor((x1 - xmin + 1) * xcoef)
+        # x2 = np.ceil((x2 - xmin + 1) * xcoef)
+        #
+        # ymin = y1.min()
+        # ymax = y2.max()
+        # ycoef = w_units / (ymax - ymin)
+        #
+        # y1 = np.floor((y1 - ymin + 1) * ycoef)
+        # y2 = np.ceil((y2 - ymin + 1) * ycoef)
+
+        # return np.array((x1, y1, x2, y2)).T.astype(int)
+
+        mn = self.rects[:, :2].min()
+        mx = self.rects[:, 2:].max()
+
+        arr = (self.rects - mn) * ((units - 1) / (mx - mn))
+        arr[:, :2] = np.floor(arr[:, :2])
+        arr[:, 2:] = np.ceil(arr[:, 2:])
+        return arr.astype(int) + 1
+
+
 
 
 def main():
