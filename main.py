@@ -1,5 +1,5 @@
 
-from typing import Union, Iterable, Tuple
+from typing import Union, Iterable, Tuple, List, Dict
 from typing_extensions import TypeAlias
 
 import os
@@ -106,7 +106,7 @@ class RectTextViewer:
 
     @property
     def units(self):
-        return max(self.h_units, self.w_units)
+        return self.rects[:, 2:].max() - self.rects[:, :2].min() + 1
 
     def to_array(self, show_order: bool = False) -> array2D:
         """
@@ -196,6 +196,22 @@ class RectTextViewer:
         57#58#59#60#61#62#63#64#65#66#67#68#69#70#
         ##########################################
         >>> rr = vr.to_array(show_order=True); new = RectTextViewer.from_array(rr); assert vr == new
+
+        >>> vr = RectTextViewer(
+        ... np.array([
+        ...     [ 1,  1,  7,  4],
+        ...     [ 3,  4,  6, 10],
+        ...     [ 1,  7,  3,  9]])
+        ... )
+        >>> vr.show(show_order=True) # doctest: +NORMALIZE_WHITESPACE
+        1###  3##
+        #  #  # #
+        #  2######
+        #  #     #
+        #  #     #
+        #  #######
+        ####
+        >>> rr = vr.to_array(show_order=True); new = RectTextViewer.from_array(rr); assert vr == new
         """
         uniqs = np.unique(arr)
 
@@ -264,7 +280,8 @@ class RectTextViewer:
 
             assert n not in rects, f"{n} label repeats on the map"
             rects[n] = (x, y, _x, _y)
-            arr_cp[x: _x + 1, y: _y + 1] = _EMPTY_FILLER_INT
+            # arr_cp[x: _x + 1, y: _y + 1] = _EMPTY_FILLER_INT
+            arr_cp[x, y: y + len(str(n))] = _EMPTY_FILLER_INT  # remove only number label
 
         numbers = np.array(sorted(rects.keys()))
         all_numbers = np.arange(numbers[0], numbers[-1] + 1)
@@ -333,7 +350,7 @@ class RectTextViewer:
                         )
                         for v in line
                     ]
-                    for line in s.strip().splitlines()
+                    for line in s.strip('\n').splitlines()
                 ]
             )
         )
@@ -417,8 +434,60 @@ class OrderedRectangles:
             path, self.get_order_map(**get_order_map_kwargs)
         )
 
-    def load_order_map(self):
-        pass
+    def load_order_map(self, order_map: Union[RectTextViewer, str, PathLike]):
+        """
+        parses order map to change the rectangles order in the current object
+        Args:
+            order_map: order map view, its string or the file with its string
+
+        >>> rects = np.array([(0, 0.1, 0.6, 0.3), (0.3, 0.4, 0.5, 1), (0.1, 0.7, 0.2, 0.8)])  # some rects
+        >>> def check(units: int):
+        ...     r = OrderedRectangles(rects)  # make object from rects
+        ...     mp = r.get_order_map(units=units)  # make the map from the object with input discretization level
+        ...     vr = RectTextViewer.from_string(mp); vr.rects = vr.rects[::-1]  # force change rectangles order (reverse)
+        ...     r.load_order_map(vr)  # load order to the object
+        ...     assert (r.rects == rects[::-1]).all()  # check whether the order is reversed
+        >>> check(9)
+        >>> check(10)
+        >>> check(20)
+        >>> check(120)
+
+        >>> rects = np.vstack((rects, rects + 2))
+        >>> r1 = OrderedRectangles(rects)
+        >>> random_indexes = np.random.permutation(rects.shape[0])
+        >>> r2 = OrderedRectangles(rects[random_indexes])
+        >>> r1.load_order_map(r2.get_order_map(units=50))  # transfer order through the map
+        >>> assert (r1.rects == rects[random_indexes]).all()  # check the transfer is successful
+
+        """
+        if not isinstance(order_map, RectTextViewer):  # string or path
+            if any(s.isalpha() for s in str(order_map)):  # path
+                order_map = read_text(order_map)
+            # here its a viewer string content
+            order_map = RectTextViewer.from_string(order_map)
+
+        # here it is an viewer object
+
+        current_int_rects = self.get_discretized_array(units=order_map.units)
+
+        assert current_int_rects.shape == order_map.rects.shape
+
+        current_int_to_index: Dict[BoxInt, int] = {
+            tuple(row): i for i, row in enumerate(current_int_rects.tolist())
+        }
+
+        target_int_rects: List[BoxInt] = [
+            tuple(row) for row in order_map.rects.tolist()
+        ]
+        """int rects from the map in the target order"""
+
+        ordered_rects = np.array(
+            [
+                self.rects[current_int_to_index[r]] for r in target_int_rects
+            ]
+        )
+        self.rects = ordered_rects
+
 
     def to_json(self, save_map: Union[bool, PathLike] = True, **get_order_map_kwargs):
         pass
