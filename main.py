@@ -246,6 +246,31 @@ class RectTextViewer:
             for line in self.to_array(show_order=show_order)
         )
 
+    @staticmethod
+    def from_string(s: str):
+        """
+        >>> vr = RectTextViewer(np.array([(1, 1, 2, 3), (3, 4, 7, 8), (4, 1, 6, 2)]))
+        >>> st = vr.to_string(show_order=True)
+        >>> assert vr == RectTextViewer.from_string(st)
+        """
+        return RectTextViewer.from_array(
+            np.array(
+                [
+                    [
+                        (
+                            _EMPTY_FILLER_INT if v == _EMPTY_FILLER_STR else (
+                                _BOUND_FILLER_INT if v == _BOUND_FILLER_STR else (
+                                    int(v)
+                                )
+                            )
+                        )
+                        for v in line
+                    ]
+                    for line in s.strip().splitlines()
+                ]
+            )
+        )
+
     def show(self, show_order: bool = True):
         print(self.to_string(show_order=show_order))
 
