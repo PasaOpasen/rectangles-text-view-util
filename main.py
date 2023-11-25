@@ -1,5 +1,5 @@
 
-from typing import Union, Iterable, Tuple, List, Dict
+from typing import Union, Iterable, Tuple, List, Dict, TypeVar
 from typing_extensions import TypeAlias
 
 import os
@@ -9,6 +9,8 @@ import json
 import numpy as np
 
 #region ALIASES
+
+T = TypeVar('T')
 
 PathLike: TypeAlias = Union[str, os.PathLike]
 
@@ -74,8 +76,46 @@ def write_text(path: PathLike, text: str, encoding: str = 'utf-8'):
     Path(path).write_text(text, encoding=encoding, errors='ignore')
 
 
+def fast_min(x: T, y: T) -> T:
+    return x if x < y else y
+
+
+def fast_max(x: T, y: T) -> T:
+    return x if x > y else y
+
+
 def are_equal_arrs(a: array2D, b: array2D) -> bool:
     return a.shape == b.shape and (a == b).all()
+
+
+def rectangles_have_intersections(rectangles: array2D) -> bool:
+    """
+    checks whether rectangles have intersections
+
+    >>> _ = rectangles_have_intersections
+    >>> _(np.array([(1, 2, 3, 4), (5, 6, 7, 8)]))
+    False
+    >>> _(np.array([(1, 2, 3, 4), (2, 3, 7, 8)]))
+    True
+    >>> _(np.array([[ 1,  2,  9,  5],
+    ...   [ 4,  5,  7, 13],
+    ...   [ 2,  9,  4, 11]]))
+    True
+    """
+
+    if rectangles.shape[0] < 2:
+        return False
+
+    for i, (x1, y1, x2, y2) in enumerate(rectangles[:-1]):
+        for _x1, _y1, _x2, _y2 in rectangles[i + 1:]:
+            if (
+                x1 > _x2 or y1 > _y2 or _x1 > x2 or _y1 > y2
+            ):
+                continue
+            return True
+
+    return False
+
 
 #endregion
 
@@ -369,8 +409,95 @@ class OrderedRectangles:
     def __eq__(self, other):
         return are_equal_arrs(self.rects, other.rects)
 
+    def get_best_units_count(self, minimum: int = 4, maximum: int = 300) -> Tuple[int, arrayRectsInt]:
+        """
+        seeks for minimal units count to get the map without intersections
+        Args:
+            minimum:
+            maximum:
+
+        Returns:
+            pair (units count, its map array object)
+
+        >>> rects = np.array([(0, 0.1, 0.6, 0.3), (0.3, 0.4, 0.5, 1), (0.1, 0.7, 0.2, 0.8)])
+        >>> d = OrderedRectangles(rects)
+        >>> u, m = d.get_best_units_count()
+        >>> u
+        19
+        >>> RectTextViewer(m).show() # doctest: +NORMALIZE_WHITESPACE
+         1#####
+         #    #     3###
+         #    #     #  #
+         #    #     #  #
+         #    #     ####
+         #    #2###########
+         #    ##          #
+         #    ##          #
+         #    ##          #
+         #    #############
+         #    #
+         ######
+        >>> d.show_order_map(units=u - 1)  # has intersections # doctest: +NORMALIZE_WHITESPACE
+         1#####
+         #    #    3###
+         #    #    #  #
+         #    #    #  #
+         #    #    ####
+         #    2###########
+         #    #          #
+         #    #          #
+         #    #          #
+         #    ############
+         #    #
+         ######
+        >>> rects = np.array([(0, 0.1, 0.6, 0.3), (0.3, 0.4, 0.5, 1), (0.1, 0.63, 0.2, 5)])
+        >>> d = OrderedRectangles(rects)
+        >>> u, m = d.get_best_units_count()
+        >>> u
+        89
+        >>> d.show_order_map(units=u)  # doctest: +NORMALIZE_WHITESPACE
+         1#####
+         #    #    3#############################################################################
+         #    #    #                                                                            #
+         #    #    #                                                                            #
+         #    #    ##############################################################################
+         #    #2###########
+         #    ##          #
+         #    ##          #
+         #    ##          #
+         #    #############
+         #    #
+         ######
+        """
+
+        assert not rectangles_have_intersections(self.rects)
+
+        r = self.get_discretized_array(minimum)
+        if not rectangles_have_intersections(r):
+            return minimum, r
+
+        res = self.get_discretized_array(maximum)
+        if rectangles_have_intersections(res):
+            raise Exception(f"cannot find optimal unit cuz max unit size {maximum} failed, try to increase")
+
+        a = minimum
+        b = maximum
+        while b - a > 1:
+            c = (b + a) // 2
+            r = self.get_discretized_array(c)
+            if rectangles_have_intersections(r):
+                a = c
+            else:
+                b = c
+                res = r
+
+        return b, res
+
     def get_discretized_array(self, units: int = 10) -> arrayRectsInt:
         """
+        Args:
+            units: discretization level, values <=0 mean to search mininal valid automatically
+
         >>> r = OrderedRectangles([(1, 2, 3, 4), (5, 6, 7, 8)])
         >>> r.get_discretized_array(8)
         array([[1, 2, 3, 4],
@@ -385,8 +512,15 @@ class OrderedRectangles:
                [ 7,  5, 12,  8]])
         >>> r.get_discretized_array(25)
         array([[ 1,  1,  6,  4],
-               [14, 10, 26, 16]])
+               [14, 10, 25, 16]])
+        >>> r.get_discretized_array(0)  # most compact case
+        array([[1, 1, 2, 2],
+               [3, 2, 5, 4]])
         """
+
+        if units <= 0:
+            return self.get_best_units_count()[1]
+
         # x1, y1, x2, y2 = self.rects.T.copy()
 
         # xmin = x1.min()
@@ -412,7 +546,9 @@ class OrderedRectangles:
         arr = (self.rects - mn) * ((units - 1) / (mx - mn))
         arr[:, :2] = np.floor(arr[:, :2])
         arr[:, 2:] = np.ceil(arr[:, 2:])
-        return arr.astype(int) + 1
+        return (
+            np.minimum(units, arr.astype(int) + 1)
+        )  # minimum is necessary due to precision errors sometimes
 
     def get_order_map(self, units: int = 10, show_order: bool = True):
         arr = self.get_discretized_array(units=units)
