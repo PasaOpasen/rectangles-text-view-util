@@ -74,6 +74,9 @@ def write_text(path: PathLike, text: str, encoding: str = 'utf-8'):
     Path(path).write_text(text, encoding=encoding, errors='ignore')
 
 
+def are_equal_arrs(a: array2D, b: array2D) -> bool:
+    return a.shape == b.shape and (a == b).all()
+
 #endregion
 
 
@@ -94,7 +97,7 @@ class RectTextViewer:
         return f'viewer of {self.rects.shape[0]} rectangles'
 
     def __eq__(self, other):
-        return self.rects.shape == other.rects.shape and (self.rects == other.rects).all()
+        return are_equal_arrs(self.rects, other.rects)
 
     @property
     def h_units(self) -> int:
@@ -363,6 +366,9 @@ class OrderedRectangles:
     def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
         self.rects = rectangles if isinstance(rectangles, np.ndarray) else np.array([v for v in rectangles])
 
+    def __eq__(self, other):
+        return are_equal_arrs(self.rects, other.rects)
+
     def get_discretized_array(self, units: int = 10) -> arrayRectsInt:
         """
         >>> r = OrderedRectangles([(1, 2, 3, 4), (5, 6, 7, 8)])
@@ -446,7 +452,7 @@ class OrderedRectangles:
         ...     mp = r.get_order_map(units=units)  # make the map from the object with input discretization level
         ...     vr = RectTextViewer.from_string(mp); vr.rects = vr.rects[::-1]  # force change rectangles order (reverse)
         ...     r.load_order_map(vr)  # load order to the object
-        ...     assert (r.rects == rects[::-1]).all()  # check whether the order is reversed
+        ...     assert are_equal_arrs(r.rects, rects[::-1])  # check whether the order is reversed
         >>> check(9)
         >>> check(10)
         >>> check(20)
@@ -457,7 +463,7 @@ class OrderedRectangles:
         >>> random_indexes = np.random.permutation(rects.shape[0])
         >>> r2 = OrderedRectangles(rects[random_indexes])
         >>> r1.load_order_map(r2.get_order_map(units=50))  # transfer order through the map
-        >>> assert (r1.rects == rects[random_indexes]).all()  # check the transfer is successful
+        >>> assert are_equal_arrs(r1.rects, rects[random_indexes])  # check the transfer is successful
 
         """
         if not isinstance(order_map, RectTextViewer):  # string or path
@@ -488,14 +494,62 @@ class OrderedRectangles:
         )
         self.rects = ordered_rects
 
+    def to_json(self, path: PathLike, save_map: Union[bool, PathLike] = True, **get_order_map_kwargs):
+        """
+        saves the rectangles to json
+        Args:
+            path: json path
+            save_map: whether to save the map too, path means to save in the other file instead of json directly
+            **get_order_map_kwargs:
 
-    def to_json(self, save_map: Union[bool, PathLike] = True, **get_order_map_kwargs):
-        pass
+        Returns:
+
+        Notes:
+            loading object with the map is very helpful
+            cuz u can view the current rectangles order and change it manually and then load the objects with new order
+        """
+        result = {
+            'rects': [tuple(row) for row in self.rects.tolist()],
+            'map': None
+        }
+
+        if save_map:
+            mp = self.get_order_map(**get_order_map_kwargs)
+            if isinstance(save_map, bool):  # save the string inplace
+                result['map'] = mp
+            else:
+                write_text(save_map, mp)
+                result['map'] = str(
+                    Path(save_map).relative_to(
+                        Path(path).parent
+                    )
+                )
+
+        write_json(path, result)
 
     @staticmethod
-    def from_json(path: str):
-        pass
+    def from_json(path: PathLike):
+        """
+        >>> import tempfile
+        >>> rects = np.array([(0, 0.1, 0.6, 0.3), (0.3, 0.4, 0.5, 1), (0.1, 0.7, 0.2, 0.8)])
+        >>> obj = OrderedRectangles(rects)
+        >>> file = tempfile.mktemp(suffix='.json')
+        >>> obj.to_json(file, save_map=False)
+        >>> assert obj == OrderedRectangles.from_json(file)
+        >>> obj.to_json(file, save_map=True, units=13)
+        >>> assert obj == OrderedRectangles.from_json(file)
+        """
+        data = read_json(path)
+        result = OrderedRectangles(data['rects'])
 
+        mp = data.get('map')
+        if mp:
+            if any(s.isalpha() for s in mp):  # path
+                if not os.path.isabs(mp):
+                    mp = Path(path).parent / mp
+            result.load_order_map(mp)
+
+        return result
 
 
 def main():
