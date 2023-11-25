@@ -2,7 +2,15 @@
 from typing import Union, Iterable, Tuple
 from typing_extensions import TypeAlias
 
+import os
+from pathlib import Path
+import json
+
 import numpy as np
+
+#region ALIASES
+
+PathLike: TypeAlias = Union[str, os.PathLike]
 
 BoxFloat: TypeAlias = Tuple[float, float, float, float]
 BoxInt: TypeAlias = Tuple[int, int, int, int]
@@ -17,6 +25,10 @@ arrayRectsInt: TypeAlias = arrayRects
 where (1, 2, 3, 4) means to fill [1:3, 2:4] including bounds, one-based
 """
 
+#endregion
+
+#region CONSTANTS
+
 _EMPTY_FILLER_INT = -2
 _BOUND_FILLER_INT = -1
 
@@ -24,6 +36,45 @@ FILLERS_INT = (_BOUND_FILLER_INT, _EMPTY_FILLER_INT)
 
 _EMPTY_FILLER_STR = ' '
 _BOUND_FILLER_STR = '#'
+
+#endregion
+
+
+#region FUNCS
+
+def mkdir_of_file(file_path: PathLike):
+    """
+    для этого файла создаёт папку, в которой он должен лежать
+    """
+    Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def mkdir(dir: PathLike):
+    """mkdir with parents"""
+    Path(dir).mkdir(parents=True, exist_ok=True)
+
+
+def read_json(path: PathLike):
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+
+def write_json(path: PathLike, data):
+    mkdir_of_file(path)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f)
+
+
+def read_text(path: PathLike, encoding: str = 'utf-8'):
+    return Path(path).read_text(encoding=encoding, errors='ignore')
+
+
+def write_text(path: PathLike, text: str, encoding: str = 'utf-8'):
+    mkdir_of_file(path)
+    Path(path).write_text(text, encoding=encoding, errors='ignore')
+
+
+#endregion
 
 
 class RectTextViewer:
@@ -211,6 +262,7 @@ class RectTextViewer:
                 if has_hole:
                     raise Exception(f"rectangle starts on ({x}, {y}) is not matched (at bottom)")
 
+            assert n not in rects, f"{n} label repeats on the map"
             rects[n] = (x, y, _x, _y)
             arr_cp[x: _x + 1, y: _y + 1] = _EMPTY_FILLER_INT
 
@@ -339,10 +391,14 @@ class OrderedRectangles:
         arr[:, 2:] = np.ceil(arr[:, 2:])
         return arr.astype(int) + 1
 
-    def show(self, units: int = 10, show_order: bool = True):
+    def get_order_map(self, units: int = 10, show_order: bool = True):
+        arr = self.get_discretized_array(units=units)
+        return RectTextViewer(arr).to_string(show_order=show_order)
+
+    def show_order_map(self, **get_order_map_kwargs):
         """
         >>> r = OrderedRectangles([(0.1, 0.2, 0.23, 1), (0.35, 0.45, 0.74, 0.8)])
-        >>> r.show(units=12)  # doctest: +NORMALIZE_WHITESPACE
+        >>> r.show_order_map(units=12)  # doctest: +NORMALIZE_WHITESPACE
          1##########
          #         #
          ###########
@@ -353,8 +409,24 @@ class OrderedRectangles:
             #    #
             ######
         """
-        arr = self.get_discretized_array(units=units)
-        RectTextViewer(arr).show(show_order=show_order)
+        print(self.get_order_map(**get_order_map_kwargs))
+
+    def save_order_map(self, path: PathLike, **get_order_map_kwargs):
+        """saves text order map to file"""
+        write_text(
+            path, self.get_order_map(**get_order_map_kwargs)
+        )
+
+    def load_order_map(self):
+        pass
+
+    def to_json(self, save_map: Union[bool, PathLike] = True, **get_order_map_kwargs):
+        pass
+
+    @staticmethod
+    def from_json(path: str):
+        pass
+
 
 
 def main():
