@@ -130,8 +130,29 @@ def rectangles_have_intersections(rectangles: array2D) -> bool:
 
 
 class RectTextViewer:
+    """
+    implements (array of coordinates rectangles) -> (str) conversion logic
 
-    def __init__(self, rectangles: arrayRectsInt):
+    also supports vice versa conversion
+
+    >>> rects = [(1, 2, 3, 4), (4, 6, 7, 8), (1, 6, 3, 9)]
+    >>> vr = RectTextViewer(rects)
+    >>> vrs = vr.to_string(show_order=True)
+    >>> print(vrs) # doctest: +NORMALIZE_WHITESPACE
+     1## 3###
+     # # #  #
+     ### ####
+         2##
+         # #
+         # #
+         ###
+    >>> vr2 = RectTextViewer.from_string(vrs); assert vr == vr2
+    """
+
+    def __init__(self, rectangles: Union[arrayRectsInt, Iterable[BoxInt]]):
+
+        if not isinstance(rectangles, np.ndarray):
+            rectangles = np.array(rectangles)
 
         assert rectangles.shape[1] == 4, rectangles.shape
         assert (rectangles > 0).all()
@@ -158,11 +179,17 @@ class RectTextViewer:
 
     @property
     def units(self):
+        """
+        count of units for the map
+
+        >>> assert RectTextViewer([(1, 1, 2, 3)]).units == 3
+        >>> assert RectTextViewer([(1, 2, 3, 4), (10, 11, 12, 13)]).units == 13
+        """
         return self.rects[:, 2:].max() - self.rects[:, :2].min() + 1
 
     def to_array(self, show_order: bool = False) -> array2D:
         """
-        >>> vr = RectTextViewer(np.array([(1, 1, 2, 3), (3, 4, 6, 7), (4, 1, 6, 2)]))
+        >>> vr = RectTextViewer([(1, 1, 2, 3), (3, 4, 6, 7), (4, 1, 6, 2)])
         >>> vr.to_array()
         array([[-1, -1, -1, -2, -2, -2, -2],
                [-1, -1, -1, -2, -2, -2, -2],
@@ -201,7 +228,7 @@ class RectTextViewer:
     @staticmethod
     def from_array(arr: array2D):
         """
-        >>> vr = RectTextViewer(np.array([(1, 1, 3, 3), (1, 5, 3, 7)]))  # simple case
+        >>> vr = RectTextViewer([(1, 1, 3, 3), (1, 5, 3, 7)])  # simple case
         >>> rr = vr.to_array(show_order=True); rr
         array([[ 1, -1, -1, -2,  2, -1, -1],
                [-1, -2, -1, -2, -1, -2, -1],
@@ -230,11 +257,11 @@ class RectTextViewer:
         >>> new = RectTextViewer.from_array(rr); assert vr == new
 
         >>> vr = RectTextViewer(
-        ...     np.array([
+        ...     [
         ...         (a, b, a + 1, b + 2)
         ...         for a in np.arange(1, 11, 2)
         ...         for b in np.arange(1, 41, 3)
-        ...     ])
+        ...     ]
         ... )
         >>> vr.show() # doctest: +NORMALIZE_WHITESPACE
         1##2##3##4##5##6##7##8##9##10#11#12#13#14#
@@ -250,10 +277,11 @@ class RectTextViewer:
         >>> rr = vr.to_array(show_order=True); new = RectTextViewer.from_array(rr); assert vr == new
 
         >>> vr = RectTextViewer(
-        ... np.array([
-        ...     [ 1,  1,  7,  4],
-        ...     [ 3,  4,  6, 10],
-        ...     [ 1,  7,  3,  9]])
+        ...     [
+        ...         ( 1,  1,  7,  4),
+        ...         ( 3,  4,  6, 10),
+        ...         ( 1,  7,  3,  9)
+        ...     ]
         ... )
         >>> vr.show(show_order=True) # doctest: +NORMALIZE_WHITESPACE
         1###  3##
@@ -358,7 +386,7 @@ class RectTextViewer:
 
     def to_string(self, show_order: bool = False):
         """
-        >>> vr = RectTextViewer(np.array([(1, 1, 2, 3), (3, 4, 7, 8), (4, 1, 6, 2)]))
+        >>> vr = RectTextViewer([(1, 1, 2, 3), (3, 4, 7, 8), (4, 1, 6, 2)])
         >>> print(vr.to_string(show_order=True))  # doctest: +NORMALIZE_WHITESPACE
         1##
         ###
@@ -385,7 +413,7 @@ class RectTextViewer:
     @staticmethod
     def from_string(s: str):
         """
-        >>> vr = RectTextViewer(np.array([(1, 1, 2, 3), (3, 4, 7, 8), (4, 1, 6, 2)]))
+        >>> vr = RectTextViewer([(1, 1, 2, 3), (3, 4, 7, 8), (4, 1, 6, 2)])
         >>> st = vr.to_string(show_order=True)
         >>> assert vr == RectTextViewer.from_string(st)
         """
