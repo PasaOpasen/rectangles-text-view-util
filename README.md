@@ -1,3 +1,8 @@
+[![PyPI version](https://badge.fury.io/py/ordered-rectangles.svg)](https://pypi.org/project/ordered-rectangles/)
+[![Downloads](https://pepy.tech/badge/ordered-rectangles)](https://pepy.tech/project/ordered-rectangles)
+[![Downloads](https://pepy.tech/badge/ordered-rectangles/month)](https://pepy.tech/project/ordered-rectangles)
+[![Downloads](https://pepy.tech/badge/ordered-rectangles/week)](https://pepy.tech/project/ordered-rectangles)
+
 # ordered_rectangles
 
 This package is an utility purposed to:
