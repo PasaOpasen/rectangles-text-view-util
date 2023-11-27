@@ -16,6 +16,7 @@ PathLike: TypeAlias = Union[str, os.PathLike]
 
 BoxFloat: TypeAlias = Tuple[float, float, float, float]
 BoxInt: TypeAlias = Tuple[int, int, int, int]
+Box: TypeAlias = Union[BoxInt, BoxFloat]
 
 array2D: TypeAlias = np.ndarray
 arrayRects: TypeAlias = array2D
@@ -95,6 +96,15 @@ def fast_max(x: T, y: T) -> T:
 
 def are_equal_arrs(a: array2D, b: array2D) -> bool:
     return a.shape == b.shape and (a == b).all()
+
+
+def change_order(box: Box) -> Box:
+    """
+    >>> change_order((1, 2, 3, 4))
+    (2, 1, 4, 3)
+    """
+    x1, y1, x2, y2 = box
+    return y1, x1, y2, x2
 
 
 def rectangles_have_intersections(rectangles: array2D) -> bool:
@@ -548,8 +558,11 @@ class OrderedRectangles:
     >>> assert d[1] == d2[2] and d[2] == d2[1]
     """
 
-    def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
+    def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]], is_numpy_ordered: bool = True):
         self.rects = rectangles if isinstance(rectangles, np.ndarray) else np.array([v for v in rectangles])
+        if not is_numpy_ordered:
+            self.rects[:, [0, 1]] = self.rects[:, [1, 0]]
+            self.rects[:, [2, 3]] = self.rects[:, [3, 2]]
 
     def __eq__(self, other):
         return are_equal_arrs(self.rects, other.rects)
@@ -561,6 +574,22 @@ class OrderedRectangles:
     def __setitem__(self, key, value):
         assert isinstance(key, int), key
         self.rects[key - 1] = value
+
+    def as_list(self, numpy_ordered: bool = True) -> List[BoxFloat]:
+        """
+        >>> r = OrderedRectangles([(0.1, 0.2, 0.23, 1), (0.35, 0.45, 0.74, 0.8)])
+        >>> assert r.as_list() == [(0.1, 0.2, 0.23, 1.0), (0.35, 0.45, 0.74, 0.8)]
+        >>> r.as_list(numpy_ordered=False)
+        [(0.2, 0.1, 1.0, 0.23), (0.45, 0.35, 0.8, 0.74)]
+        >>> r2 = OrderedRectangles([(0.2, 0.1, 1.0, 0.23), (0.45, 0.35, 0.8, 0.74)], is_numpy_ordered=False)
+        >>> assert r == r2
+        """
+        if numpy_ordered:
+            return [tuple(row) for row in self.rects]
+        return [change_order(row) for row in self.rects]
+
+    def as_list_pil_ordered(self) -> List[BoxFloat]:
+        return self.as_list(numpy_ordered=False)
 
     def get_best_units_count(
         self,
