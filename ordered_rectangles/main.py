@@ -496,6 +496,37 @@ class OrderedRectangles:
        #           #  #                             #
        #############  ###############################
 
+    I can swap 5th and 6th rectangles programmatically:
+    >>> d[5], d[6] = d[6], d[5]
+    >>> d.show_order_map(units=0)  # doctest: +NORMALIZE_WHITESPACE
+       1########      2###################  3######## 4##############################
+       #       #      #                  #  #       # #                             #
+       #       #      #                  #  #       # #                             #
+       #       #      #                  #  #       # #                             #
+       #       #      ####################  #       # #                             #
+       #       #                            #       # #                             #
+       #       #                            #       # ###############################
+       #       #                            #       #
+       #########                            #########
+       6############
+       #           #  5##############################
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #############  ###############################
+
+    The key feature is that I can change this order by changing the string map:
+    >>> d3 = d[3]; d4 = d[4]
+    >>> s = d.get_order_map(units=0).translate({ord('4'): '3', ord('3'): '4'})
+    >>> d.load_order_map(s)
+    >>> assert d[3] == d4 and d[4] == d3
+
+
     """
 
     def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
@@ -503,6 +534,14 @@ class OrderedRectangles:
 
     def __eq__(self, other):
         return are_equal_arrs(self.rects, other.rects)
+
+    def __getitem__(self, item):
+        assert isinstance(item, int), item
+        return tuple(self.rects[item - 1])
+
+    def __setitem__(self, key, value):
+        assert isinstance(key, int), key
+        self.rects[key - 1] = value
 
     def get_best_units_count(
         self,
