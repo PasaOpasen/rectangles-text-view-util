@@ -31,18 +31,22 @@ where (1, 2, 3, 4) means to fill [1:3, 2:4] including bounds, one-based
 
 #region CONSTANTS
 
-_EMPTY_FILLER_INT = -2
-_BOUND_FILLER_INT = -1
+_EMPTY_FILLER_INT: int = -2
+_BOUND_FILLER_INT: int = -1
 
 FILLERS_INT = (_BOUND_FILLER_INT, _EMPTY_FILLER_INT)
 """values in the numpy map reserved for non-labeled data"""
 
-EMPTY_FILLER_STR = ' '
+EMPTY_FILLER_STR: str = ' '
 """fill value for empty space in the ordered map string view"""
-BOUND_FILLER_STR = '#'
+BOUND_FILLER_STR: str = '#'
 """fill value for usual bound in the ordered map string view"""
 
+UNITS_COUNT_SEARCH_MIN_VALUE: int = 4
+"""min unit size available for autosearch algorithm"""
 
+UNITS_COUNT_SEARCH_MAX_VALUE: int = 300
+"""max unit size available for autosearch algorithm"""
 
 #endregion
 
@@ -414,7 +418,11 @@ class OrderedRectangles:
     def __eq__(self, other):
         return are_equal_arrs(self.rects, other.rects)
 
-    def get_best_units_count(self, minimum: int = 4, maximum: int = 300) -> Tuple[int, arrayRectsInt]:
+    def get_best_units_count(
+        self,
+        minimum: int = UNITS_COUNT_SEARCH_MIN_VALUE,
+        maximum: int = UNITS_COUNT_SEARCH_MAX_VALUE
+    ) -> Tuple[int, arrayRectsInt]:
         """
         seeks for minimal units count to get the map without intersections
         Args:
@@ -524,7 +532,10 @@ class OrderedRectangles:
         """
 
         if units <= 0:
-            return self.get_best_units_count()[1]
+            return self.get_best_units_count(
+                minimum=UNITS_COUNT_SEARCH_MIN_VALUE if units == 0 else -units,
+                maximum=UNITS_COUNT_SEARCH_MAX_VALUE
+            )[1]
 
         # x1, y1, x2, y2 = self.rects.T.copy()
 
