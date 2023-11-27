@@ -35,9 +35,14 @@ _EMPTY_FILLER_INT = -2
 _BOUND_FILLER_INT = -1
 
 FILLERS_INT = (_BOUND_FILLER_INT, _EMPTY_FILLER_INT)
+"""values in the numpy map reserved for non-labeled data"""
 
-_EMPTY_FILLER_STR = ' '
-_BOUND_FILLER_STR = '#'
+EMPTY_FILLER_STR = ' '
+"""fill value for empty space in the ordered map string view"""
+BOUND_FILLER_STR = '#'
+"""fill value for usual bound in the ordered map string view"""
+
+
 
 #endregion
 
@@ -362,8 +367,8 @@ class RectTextViewer:
         return '\n'.join(
             ''.join(
                 (
-                    _EMPTY_FILLER_STR if n == _EMPTY_FILLER_INT else (
-                        _BOUND_FILLER_STR if n == _BOUND_FILLER_INT else (
+                    EMPTY_FILLER_STR if n == _EMPTY_FILLER_INT else (
+                        BOUND_FILLER_STR if n == _BOUND_FILLER_INT else (
                             str(n)
                         )
                     )
@@ -385,8 +390,8 @@ class RectTextViewer:
                 [
                     [
                         (
-                            _EMPTY_FILLER_INT if v == _EMPTY_FILLER_STR else (
-                                _BOUND_FILLER_INT if v == _BOUND_FILLER_STR else (
+                            _EMPTY_FILLER_INT if v == EMPTY_FILLER_STR else (
+                                _BOUND_FILLER_INT if v == BOUND_FILLER_STR else (
                                     int(v)
                                 )
                             )
