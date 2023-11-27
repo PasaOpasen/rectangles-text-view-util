@@ -1,5 +1,13 @@
 import setuptools
 
+
+def parse_requirements(requirements: str):
+    with open(requirements) as f:
+        return [
+            l.strip('\n') for l in f if l.strip('\n') and not l.startswith('#')
+        ]
+
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -22,7 +30,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=[
-    ]
+    install_requires=parse_requirements('./requirements.txt')
     
 )
