@@ -152,7 +152,7 @@ class RectTextViewer:
     def __init__(self, rectangles: Union[arrayRectsInt, Iterable[BoxInt]]):
 
         if not isinstance(rectangles, np.ndarray):
-            rectangles = np.array(rectangles)
+            rectangles = np.array([r for r in rectangles])
 
         assert rectangles.shape[1] == 4, rectangles.shape
         assert (rectangles > 0).all()
@@ -440,6 +440,64 @@ class RectTextViewer:
 
 
 class OrderedRectangles:
+    """
+    stores `(x1, y1, x2, y2)` numpy-ordered rectangles and provides an ability to
+        1. show its text map which reflects the rectangles order and positions with different disretization level
+        2. save/load the rectangles with/without the map to json file
+        3. change the map manually to change the rectangles order easily
+
+    How to create an object:
+    >>> d = OrderedRectangles([(0.1, 0.2, 0.3, 0.4), (0.1, 0.6, 0.2, 1.1)])
+
+    How to view the map with `units` discretization level:
+    >>> units = 15
+    >>> mp = d.get_order_map(units=units); print(mp) # doctest: +NORMALIZE_WHITESPACE
+     1#### 2#######
+     #   # #      #
+     #   # ########
+     #####
+
+    Use `show_order_map` method to simplify this step:
+    >>> d.show_order_map(units=units, show_order=False) # doctest: +NORMALIZE_WHITESPACE
+     ##### ########
+     #   # #      #
+     #   # ########
+     #####
+
+    Let's try bigger example:
+    >>> d = OrderedRectangles(
+    ...     [
+    ...         (0.1, 0.2, 0.3, 0.4), (0.1, 0.6, 0.2, 1.1),
+    ...         (0.1, 1.2, 0.3, 1.4), (0.1, 1.5, 0.25, 2.3),
+    ...         (0.35, 0.2, 0.6, 0.5), (0.4, 0.6, 0.6, 1.4)
+    ...     ]
+    ... )
+
+    `units` <= 0 means to search the best value automatically
+    >>> d.show_order_map(units=0)  # doctest: +NORMALIZE_WHITESPACE
+       1########      2###################  3######## 4##############################
+       #       #      #                  #  #       # #                             #
+       #       #      #                  #  #       # #                             #
+       #       #      #                  #  #       # #                             #
+       #       #      ####################  #       # #                             #
+       #       #                            #       # #                             #
+       #       #                            #       # ###############################
+       #       #                            #       #
+       #########                            #########
+       5############
+       #           #  6##############################
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #           #  #                             #
+       #############  ###############################
+
+    """
+
     def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
         self.rects = rectangles if isinstance(rectangles, np.ndarray) else np.array([v for v in rectangles])
 
