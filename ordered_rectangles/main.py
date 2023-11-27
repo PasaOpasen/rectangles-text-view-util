@@ -526,7 +526,26 @@ class OrderedRectangles:
     >>> d.load_order_map(s)
     >>> assert d[3] == d4 and d[4] == d3
 
+    However it's not efficiet to change the rectangles order by changing the string map programmatically.
+    Instead, it is supposed that u will save the map to some text file, change numbers manually and load the map from
+        the file. `load_order_map` methods supports file path as an input too.
 
+    Finally there is a way to save and load the rectangles as JSON:
+    >>> tempdir = 'tmp'
+    >>> jsdir = os.path.join(tempdir, 'separate-jsons'); mkdir(jsdir)
+    >>> mapdir = os.path.join(tempdir, 'separate-maps'); mkdir(mapdir)
+    >>> js_file = os.path.join(jsdir, 'rects.json')
+    >>> map_file = os.path.join(mapdir, 'rects.txt')
+    >>> d.to_json(path=js_file, save_map=map_file, units=0)
+    >>> dct = read_json(js_file); print(str(dct).replace(os.sep, '/').replace('//', '/'))
+    {'rects': [[0.1, 0.2, 0.3, 0.4], [0.1, 0.6, 0.2, 1.1], [0.1, 1.5, 0.25, 2.3], [0.1, 1.2, 0.3, 1.4], [0.4, 0.6, 0.6, 1.4], [0.35, 0.2, 0.6, 0.5]], 'map': '../separate-maps/rects.txt'}
+
+    As u can see, tha path to maps file is saved as absolute or relative to the json file.
+    U can change the order in the map manually and reload rectangles
+
+    >>> write_text(map_file, read_text(map_file).translate({ord('1'): '2', ord('2'): '1'}))
+    >>> d2 = OrderedRectangles.from_json(js_file)
+    >>> assert d[1] == d2[2] and d[2] == d2[1]
     """
 
     def __init__(self, rectangles: Union[array2D, Iterable[BoxFloat]]):
@@ -796,11 +815,7 @@ class OrderedRectangles:
                 result['map'] = mp
             else:
                 write_text(save_map, mp)
-                result['map'] = str(
-                    Path(save_map).relative_to(
-                        Path(path).parent
-                    )
-                )
+                result['map'] = os.path.relpath(Path(save_map), Path(path).parent)
 
         write_json(path, result)
 
