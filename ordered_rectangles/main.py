@@ -38,16 +38,18 @@ _BOUND_FILLER_INT: int = -1
 FILLERS_INT = (_BOUND_FILLER_INT, _EMPTY_FILLER_INT)
 """values in the numpy map reserved for non-labeled data"""
 
-EMPTY_FILLER_STR: str = ' '
-"""fill value for empty space in the ordered map string view"""
-BOUND_FILLER_STR: str = '#'
-"""fill value for usual bound in the ordered map string view"""
+class Config:
 
-UNITS_COUNT_SEARCH_MIN_VALUE: int = 4
-"""min unit size available for autosearch algorithm"""
+    EMPTY_FILLER_STR: str = ' '
+    """fill value for empty space in the ordered map string view"""
+    BOUND_FILLER_STR: str = '#'
+    """fill value for usual bound in the ordered map string view"""
 
-UNITS_COUNT_SEARCH_MAX_VALUE: int = 300
-"""max unit size available for autosearch algorithm"""
+    UNITS_COUNT_SEARCH_MIN_VALUE: int = 4
+    """min unit size available for autosearch algorithm"""
+
+    UNITS_COUNT_SEARCH_MAX_VALUE: int = 300
+    """max unit size available for autosearch algorithm"""
 
 #endregion
 
@@ -409,8 +411,8 @@ class RectTextViewer:
         return '\n'.join(
             ''.join(
                 (
-                    EMPTY_FILLER_STR if n == _EMPTY_FILLER_INT else (
-                        BOUND_FILLER_STR if n == _BOUND_FILLER_INT else (
+                    Config.EMPTY_FILLER_STR if n == _EMPTY_FILLER_INT else (
+                        Config.BOUND_FILLER_STR if n == _BOUND_FILLER_INT else (
                             str(n)
                         )
                     )
@@ -432,8 +434,8 @@ class RectTextViewer:
                 [
                     [
                         (
-                            _EMPTY_FILLER_INT if v == EMPTY_FILLER_STR else (
-                                _BOUND_FILLER_INT if v == BOUND_FILLER_STR else (
+                            _EMPTY_FILLER_INT if v == Config.EMPTY_FILLER_STR else (
+                                _BOUND_FILLER_INT if v == Config.BOUND_FILLER_STR else (
                                     int(v)
                                 )
                             )
@@ -593,8 +595,8 @@ class OrderedRectangles:
 
     def get_best_units_count(
         self,
-        minimum: int = UNITS_COUNT_SEARCH_MIN_VALUE,
-        maximum: int = UNITS_COUNT_SEARCH_MAX_VALUE
+        minimum: int = Config.UNITS_COUNT_SEARCH_MIN_VALUE,
+        maximum: int = Config.UNITS_COUNT_SEARCH_MAX_VALUE
     ) -> Tuple[int, arrayRectsInt]:
         """
         seeks for minimal units count to get the map without intersections
@@ -706,8 +708,8 @@ class OrderedRectangles:
 
         if units <= 0:
             return self.get_best_units_count(
-                minimum=UNITS_COUNT_SEARCH_MIN_VALUE if units == 0 else -units,
-                maximum=UNITS_COUNT_SEARCH_MAX_VALUE
+                minimum=Config.UNITS_COUNT_SEARCH_MIN_VALUE if units == 0 else -units,
+                maximum=Config.UNITS_COUNT_SEARCH_MAX_VALUE
             )[1]
 
         # x1, y1, x2, y2 = self.rects.T.copy()
