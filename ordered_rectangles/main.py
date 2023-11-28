@@ -1,5 +1,5 @@
 
-from typing import Union, Iterable, Tuple, List, Dict, TypeVar
+from typing import Union, Iterable, Tuple, List, Sequence, Dict, TypeVar
 from typing_extensions import TypeAlias
 
 import os
@@ -51,7 +51,7 @@ class Config:
     UNITS_COUNT_SEARCH_MIN_VALUE: int = 4
     """min unit size available for autosearch algorithm"""
 
-    UNITS_COUNT_SEARCH_MAX_VALUE: int = 300
+    UNITS_COUNT_SEARCH_MAX_VALUE: Union[int, Sequence[int]] = (300, 500, 700, 1000)
     """max unit size available for autosearch algorithm"""
 
 #endregion
@@ -616,7 +616,7 @@ class OrderedRectangles:
     def get_best_units_count(
         self,
         minimum: int = Config.UNITS_COUNT_SEARCH_MIN_VALUE,
-        maximum: int = Config.UNITS_COUNT_SEARCH_MAX_VALUE
+        maximum: Union[int, Sequence[int]] = Config.UNITS_COUNT_SEARCH_MAX_VALUE
     ) -> Tuple[int, arrayRectsInt]:
         """
         seeks for minimal units count to get the map without intersections
@@ -676,6 +676,10 @@ class OrderedRectangles:
          #    #############
          #    #
          ######
+
+        >>> d = OrderedRectangles([(0, 0, 0.01, 0.02), (0.01, 0.1, 2, 30)])
+        >>> d.get_best_units_count()[0]
+        601
         """
 
         assert not has_invalid_rectangles(self.rects)
@@ -684,12 +688,17 @@ class OrderedRectangles:
         if not has_invalid_rectangles(r):
             return minimum, r
 
-        res = self.get_discretized_array(maximum)
-        if has_invalid_rectangles(res):
+        for _max in ([maximum] if isinstance(maximum, int) else sorted(maximum)):
+            res = self.get_discretized_array(_max)
+            if has_invalid_rectangles(res):
+                minimum = _max  # change lower known failure border for next iteration
+            else:
+                break
+        else:
             raise Exception(f"cannot find optimal unit cuz max unit size {maximum} failed, try to increase")
 
         a = minimum
-        b = maximum
+        b = _max
         while b - a > 1:
             c = (b + a) // 2
             r = self.get_discretized_array(c)
