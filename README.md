@@ -5,6 +5,12 @@
 
 # ordered_rectangles
 
+```
+pip install ordered-rectangles
+
+pip install ordered-rectangles[extra]
+```
+
 This package is an utility purposed to:
 * view float rectangles relations (relative positions and the order) in the text format
 * change rectangles order by changing rectangles labels in the text format view file

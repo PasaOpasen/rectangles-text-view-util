@@ -13,7 +13,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ordered_rectangles", 
-    version="0.0.3",
+    version="0.0.4",
     author="Demetry Pascal",
     author_email="qtckpuhdsa@gmail.com",
     maintainer='Demetry Pascal',
