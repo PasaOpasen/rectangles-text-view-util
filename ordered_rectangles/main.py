@@ -949,6 +949,13 @@ class OrderedRectangles:
         from .extra import save_rectangles_to_pdf
 
         w, h = pagesize
+        
+        #
+        # convert to pil format
+        #
+        rects = self.rects.astype(float)
+        rects[:, [0, 1]] = rects[:, [1, 0]]
+        rects[:, [2, 3]] = rects[:, [3, 2]]
 
         w_coef = w / self.rects[:, 2].max()
         h_coef = h / self.rects[:, 3].max()
@@ -958,7 +965,7 @@ class OrderedRectangles:
         save_rectangles_to_pdf(
             pages_sizes=pagesize,
             pages_rectangles=[
-                (self.rects.astype(float) * coef).tolist()
+                (rects * coef).tolist()
             ],
             path_to_save=path,
             **kwargs
