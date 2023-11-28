@@ -155,8 +155,33 @@ def has_invalid_bounds(rectangles: array2D) -> bool:
     return bool(get_mask_of_invalid_bounds(rectangles).any())
 
 
+def get_mask_of_too_short_widths(rectangles: arrayRectsInt) -> array1DMask:
+    """
+    seeks for rectangles with to short width to contain its index label with a margin:
+        if rect index is 98, it must have width 3 at least to insert 98# string
+    Args:
+        rectangles:
+
+    Returns:
+
+    >>> _ = get_mask_of_too_short_widths
+    >>> mask = _(np.array([(1, i, 1, i + 1) for i in range(11)])); mask * 1
+    array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+    """
+    return rectangles[:, 3] - rectangles[:, 1] < np.array([len(str(i)) for i in range(1, rectangles.shape[0] + 1)])
+
+
+def has_too_short_widths(rectangles: arrayRectsInt) -> bool:
+    return bool(get_mask_of_too_short_widths(rectangles).any())
+
+
 def has_invalid_rectangles(rectangles: array2D) -> bool:
-    return has_invalid_bounds(rectangles) or rectangles_have_intersections(rectangles)
+    """function using for units autosearch checks"""
+    return (
+        has_invalid_bounds(rectangles) or
+        rectangles_have_intersections(rectangles) or
+        has_too_short_widths(rectangles)
+    )
 
 #endregion
 
@@ -191,7 +216,11 @@ class RectTextViewer:
 
         bad_rects_mask = get_mask_of_invalid_bounds(rectangles)
         if bad_rects_mask.any():
-            raise ValueError(f"next rectangles are not valid: {rectangles[bad_rects_mask]}")
+            raise ValueError(f"next rectangles are not valid by bounds: {rectangles[bad_rects_mask]}")
+
+        bad_rects_mask = get_mask_of_too_short_widths(rectangles)
+        if bad_rects_mask.any():
+            raise ValueError(f"next rectangles have too short width: {rectangles[bad_rects_mask]}")
 
         self.rects = rectangles
 
