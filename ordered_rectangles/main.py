@@ -18,6 +18,8 @@ BoxFloat: TypeAlias = Tuple[float, float, float, float]
 BoxInt: TypeAlias = Tuple[int, int, int, int]
 Box: TypeAlias = Union[BoxInt, BoxFloat]
 
+array1D: TypeAlias = np.ndarray
+array1DMask: TypeAlias = array1D
 array2D: TypeAlias = np.ndarray
 arrayRects: TypeAlias = array2D
 """2D array of rectangles with columns (x1, y1, x2, y2) where x is rows dim"""
@@ -37,6 +39,7 @@ _BOUND_FILLER_INT: int = -1
 
 FILLERS_INT = (_BOUND_FILLER_INT, _EMPTY_FILLER_INT)
 """values in the numpy map reserved for non-labeled data"""
+
 
 class Config:
 
@@ -138,6 +141,23 @@ def rectangles_have_intersections(rectangles: array2D) -> bool:
     return False
 
 
+def get_mask_of_invalid_bounds(rectangles: array2D) -> array1DMask:
+    """
+    seeks for rectangles with bad bounds
+
+    >>> get_mask_of_invalid_bounds(np.array([(1, 2, 3, 4), (1, 2, 1, 3), (1, 1, 0, 0)]))
+    array([False,  True,  True])
+    """
+    return (rectangles[:, 0] >= rectangles[:, 2]) | (rectangles[:, 1] >= rectangles[:, 3])
+
+
+def has_invalid_bounds(rectangles: array2D) -> bool:
+    return bool(get_mask_of_invalid_bounds(rectangles).any())
+
+
+def has_invalid_rectangles(rectangles: array2D) -> bool:
+    return has_invalid_bounds(rectangles) or rectangles_have_intersections(rectangles)
+
 #endregion
 
 
@@ -169,7 +189,7 @@ class RectTextViewer:
         assert rectangles.shape[1] == 4, rectangles.shape
         assert (rectangles > 0).all()
 
-        bad_rects_mask = (rectangles[:, 0] >= rectangles[:, 2]) | (rectangles[:, 1] >= rectangles[:, 3])
+        bad_rects_mask = get_mask_of_invalid_bounds(rectangles)
         if bad_rects_mask.any():
             raise ValueError(f"next rectangles are not valid: {rectangles[bad_rects_mask]}")
 
@@ -658,14 +678,14 @@ class OrderedRectangles:
          ######
         """
 
-        assert not rectangles_have_intersections(self.rects)
+        assert not has_invalid_rectangles(self.rects)
 
         r = self.get_discretized_array(minimum)
-        if not rectangles_have_intersections(r):
+        if not has_invalid_rectangles(r):
             return minimum, r
 
         res = self.get_discretized_array(maximum)
-        if rectangles_have_intersections(res):
+        if has_invalid_rectangles(res):
             raise Exception(f"cannot find optimal unit cuz max unit size {maximum} failed, try to increase")
 
         a = minimum
@@ -673,7 +693,7 @@ class OrderedRectangles:
         while b - a > 1:
             c = (b + a) // 2
             r = self.get_discretized_array(c)
-            if rectangles_have_intersections(r):
+            if has_invalid_rectangles(r):
                 a = c
             else:
                 b = c
