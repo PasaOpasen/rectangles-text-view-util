@@ -819,7 +819,7 @@ class OrderedRectangles:
         )
         self.rects = ordered_rects
 
-    def to_json(self, path: PathLike, save_map: Union[bool, PathLike] = True, **get_order_map_kwargs):
+    def to_json(self, path: PathLike, save_map: Union[bool, PathLike] = False, **get_order_map_kwargs):
         """
         saves the rectangles to json
         Args:
