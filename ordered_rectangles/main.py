@@ -682,7 +682,10 @@ class OrderedRectangles:
         601
         """
 
-        assert not has_invalid_rectangles(self.rects)
+        assert not has_invalid_bounds(self.rects), self.rects[get_mask_of_invalid_bounds(self.rects)]
+        assert not rectangles_have_intersections(self.rects)
+
+        # assert not has_invalid_rectangles(self.rects)
 
         r = self.get_discretized_array(minimum)
         if not has_invalid_rectangles(r):
