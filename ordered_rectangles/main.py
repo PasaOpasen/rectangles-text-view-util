@@ -739,7 +739,7 @@ class OrderedRectangles:
             np.minimum(units, arr.astype(int) + 1)
         )  # minimum is necessary due to precision errors sometimes
 
-    def get_order_map(self, units: int = 10, show_order: bool = True):
+    def get_order_map(self, units: int = 0, show_order: bool = True):
         arr = self.get_discretized_array(units=units)
         return RectTextViewer(arr).to_string(show_order=show_order)
 
