@@ -957,8 +957,8 @@ class OrderedRectangles:
         rects[:, [0, 1]] = rects[:, [1, 0]]
         rects[:, [2, 3]] = rects[:, [3, 2]]
 
-        w_coef = w / self.rects[:, 2].max()
-        h_coef = h / self.rects[:, 3].max()
+        w_coef = w / rects[:, 2].max()
+        h_coef = h / rects[:, 3].max()
 
         coef = fast_min(h_coef, w_coef) * 0.97
 
