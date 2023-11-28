@@ -1,5 +1,6 @@
 
 -r requirements.txt 
+-r requirements-extra.txt
 
 ipython
 pytest

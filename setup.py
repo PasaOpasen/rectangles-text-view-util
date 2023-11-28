@@ -30,6 +30,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    install_requires=parse_requirements('./requirements.txt')
-    
+    install_requires=parse_requirements('./requirements.txt'),
+    extras_require={
+        'extra': parse_requirements('./requirements-extra.txt')
+    }
 )

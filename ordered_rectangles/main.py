@@ -935,3 +935,50 @@ class OrderedRectangles:
 
         return result
 
+    def to_pdf(self, path: PathLike, pagesize: Tuple[float, float] = (500, 500), **kwargs):
+        """
+        draws rectangles on new pdf with showing order
+        Args:
+            path:
+            pagesize:
+            **kwargs:
+
+        Returns:
+
+        """
+        from .extra import save_rectangles_to_pdf
+
+        w, h = pagesize
+
+        w_coef = w / self.rects[:, 2].max()
+        h_coef = h / self.rects[:, 3].max()
+
+        coef = fast_min(h_coef, w_coef) * 0.97
+
+        save_rectangles_to_pdf(
+            pages_sizes=pagesize,
+            pages_rectangles=[
+                (self.rects.astype(float) * coef).tolist()
+            ],
+            path_to_save=path,
+            **kwargs
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
