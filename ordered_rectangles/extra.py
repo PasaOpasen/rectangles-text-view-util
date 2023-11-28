@@ -122,7 +122,7 @@ def save_rectangles_to_pdf(
         y_bottom = pagesize[-1]
 
         if page_number == 0:  # create canvas on first page iteration
-            p = Canvas(path_to_save, pagesize=pagesize)
+            p = Canvas(str(path_to_save), pagesize=pagesize)
         else:
             p.showPage()  # старую страницу нарисовать
             p.setPageSize(pagesize)  # сделать новую с таким размером
